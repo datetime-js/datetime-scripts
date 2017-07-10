@@ -1,0 +1,12 @@
+{
+  "name": "datetime-scripts",
+  "description": "DateTime scripts",
+  "version": "1.0.0",
+  "bin": {
+    "generate-tzdata": "./bin/generate-tzdata"
+  },
+  "dependencies": {
+    "glob": "^7.1.2",
+    "mkdirp": "^0.5.1"
+  }
+}

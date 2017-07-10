@@ -1,0 +1,20 @@
+#!/usr/bin/env node
+
+'use strict';
+
+const argv = require('minimist')(process.argv.slice(2));
+const { output, version } = argv;
+
+if (!version) {
+  console.error('Parameter version is required [exit: 2]');
+  process.exit(2);
+}
+
+if (!output) {
+  console.error('Parameter output is required [exit: 2]');
+  process.exit(2);
+}
+
+const generateTzdata = require('../lib/generate-tzdata/index.js');
+
+generateTzdata(version, output);
