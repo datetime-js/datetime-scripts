@@ -1,0 +1,126 @@
+#!/usr/bin/env node
+
+'use strict';
+
+const argv = require('minimist')(process.argv.slice(2));
+const path = require('path');
+const shell = require('shelljs');
+const utils = require('../lib/utils');
+const generateTestCases = require('../lib/generate-test-cases');
+
+const { output, tzdata, version } = argv;
+const timezone = argv.timezone || '';
+
+/**
+ * ------------------------------------------------------------------------
+ * Functions
+ * ------------------------------------------------------------------------
+ */
+
+const getTimezoneJsFile = () => utils.getTimezoneJs(
+  path.resolve(tzdata, `./${version}`),
+  timezone,
+  version
+);
+
+const checkRequiredParams = () => {
+  const required = [
+    'output',
+    'tzdata',
+    'version',
+  ]
+
+  required.forEach(param => {
+    if (!argv[param]) {
+      console.error(`Parameter ${param} is required [exit: 2]`);
+      process.exit(2);
+    }
+  });
+};
+
+const checkTimezoneFile = () => {
+  const timezoneJs = getTimezoneJsFile();
+
+  if (!utils.fileExists(timezoneJs)) {
+    console.error(`Could not find ${timezoneJs} [exit: 3]`);
+    process.exit(2);
+  }
+};
+
+const run = () => {
+  const toJS = testCases => (
+`var testData = ${JSON.stringify(testCases, null, 2)};
+
+if (typeof module !== 'undefined') { module.exports = testData; }
+if (typeof global === 'object') { global.testData = testData; }
+`);
+
+  const timezoneJs = getTimezoneJsFile();
+  const tzdata = require(timezoneJs);
+
+  const writeTestCases = (outputFile, testCases) => {
+    const outputFileDir = path.dirname(outputFile);
+
+    utils.createDir(outputFileDir)
+      .then(() => utils.writeFile(outputFile, toJS(testCases)))
+      .catch(err => {
+        console.log(`Unable create ${outputFileDir}`, err);
+      });
+  };
+
+  const generate = () => {
+    console.log(`Generating test cases for ${timezone}...`);
+
+    const outputFile = path.resolve(output, `${version}/${timezone}.js`);
+    const testCases = generateTestCases(timezone, tzdata);
+
+    writeTestCases(outputFile, testCases);
+  };
+
+  const generateAll = () => {
+    const timezoneTzdata = require(getTimezoneJsFile());
+    const zones = Object.keys(timezoneTzdata.zones);
+
+    const total = zones.length;
+    let current = 0;
+
+    console.log(`\nGenerating test cases for all ${zones.length} timezones...`);
+
+    const generateNext = () => {
+      const zone = zones.shift();
+      if (zone) {
+        const cmd = `${__filename} --tzdata ${tzdata} --output ${output} --version ${version} --timezone ${zone}`;
+
+        current = current + 1;
+        console.log(`\n[${current}/${total}] ${zone}`);
+
+        shell.exec(cmd, {}, (code, output) => {
+          if (code !== 0) {
+            console.log('Error');
+            process.exit(2);
+          }
+
+          generateNext();
+        });
+      }
+    };
+
+    generateNext();
+  };
+
+  if (timezone) {
+    generate();
+  } else {
+    generateAll();
+  }
+}
+
+/**
+ * ------------------------------------------------------------------------
+ * Run script
+ * ------------------------------------------------------------------------
+ */
+
+checkRequiredParams();
+checkTimezoneFile();
+run();
