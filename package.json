@@ -1,7 +1,7 @@
 {
   "name": "datetime2-scripts",
   "description": "DateTime scripts",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "bin": {
     "generate-tzdata": "./bin/generate-tzdata",
     "generate-test-cases": "./bin/generate-test-cases"

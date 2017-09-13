@@ -102,6 +102,8 @@ if (typeof global === 'object') { global.testData = testData; }
 
           generateNext();
         });
+      } else {
+        console.log('\nDone');
       }
     };
 
